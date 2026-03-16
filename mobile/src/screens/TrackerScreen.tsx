@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   FlatList,
+  ImageBackground,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,6 +16,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { getTrackedBlueprintsApi, untrackBlueprintApi, Blueprint } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { Colors, FontSize, Spacing } from '@/theme';
+import { Images } from '@/theme/images';
 import type { RootStackParamList } from '@/navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -41,17 +43,25 @@ export function TrackerScreen() {
 
   if (!user) {
     return (
-      <View style={styles.center}>
-        <Ionicons name="lock-closed" size={48} color={Colors.textMuted} />
-        <Text style={styles.emptyTitle}>Sign In Required</Text>
-        <Text style={styles.emptyBody}>Log in to track blueprints across sessions.</Text>
-        <TouchableOpacity
-          style={styles.loginBtn}
-          onPress={() => navigation.navigate('Login')}
-        >
-          <Text style={styles.loginBtnText}>Log In</Text>
-        </TouchableOpacity>
-      </View>
+      <ImageBackground
+        source={Images.bgOpenWorld}
+        style={styles.bgFull}
+        imageStyle={styles.bgImage}
+      >
+        <View style={styles.bgOverlay}>
+          <View style={styles.center}>
+            <Ionicons name="lock-closed" size={48} color={Colors.primary} />
+            <Text style={styles.emptyTitle}>Sign In Required</Text>
+            <Text style={styles.emptyBody}>Log in to track blueprints across sessions.</Text>
+            <TouchableOpacity
+              style={styles.loginBtn}
+              onPress={() => navigation.navigate('Login')}
+            >
+              <Text style={styles.loginBtnText}>Log In</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ImageBackground>
     );
   }
 
@@ -84,19 +94,27 @@ export function TrackerScreen() {
         </Card>
       )}
       ListEmptyComponent={
-        <View style={styles.center}>
-          <Ionicons name="bookmark-outline" size={48} color={Colors.textMuted} />
-          <Text style={styles.emptyTitle}>No Tracked Blueprints</Text>
-          <Text style={styles.emptyBody}>
-            Browse blueprints and tap the bookmark icon to track them here.
-          </Text>
-          <TouchableOpacity
-            style={styles.loginBtn}
-            onPress={() => navigation.navigate('Blueprints')}
-          >
-            <Text style={styles.loginBtnText}>Browse Blueprints</Text>
-          </TouchableOpacity>
-        </View>
+        <ImageBackground
+          source={Images.bgOpenWorld}
+          style={styles.emptyBg}
+          imageStyle={styles.bgImage}
+        >
+          <View style={styles.bgOverlay}>
+            <View style={styles.center}>
+              <Ionicons name="bookmark-outline" size={48} color={Colors.primary} />
+              <Text style={styles.emptyTitle}>No Tracked Blueprints</Text>
+              <Text style={styles.emptyBody}>
+                Browse blueprints and tap the bookmark icon to track them here.
+              </Text>
+              <TouchableOpacity
+                style={styles.loginBtn}
+                onPress={() => navigation.navigate('Blueprints')}
+              >
+                <Text style={styles.loginBtnText}>Browse Blueprints</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ImageBackground>
       }
     />
   );
@@ -105,6 +123,10 @@ export function TrackerScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   content: { padding: Spacing.md, gap: Spacing.sm, paddingBottom: Spacing.xxl },
+  bgFull: { flex: 1 },
+  emptyBg: { height: 400, width: '100%' },
+  bgImage: { resizeMode: 'cover', opacity: 0.5 },
+  bgOverlay: { flex: 1, backgroundColor: 'rgba(10,10,10,0.65)', justifyContent: 'center' },
   heading: { color: Colors.textSecondary, fontSize: FontSize.sm, marginBottom: Spacing.xs },
   card: {},
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },

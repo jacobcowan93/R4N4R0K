@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   FlatList,
+  ImageBackground,
   RefreshControl,
   StyleSheet,
   Text,
@@ -15,6 +16,7 @@ import { RarityBadge } from '@/components/RarityBadge';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { getBlueprintsApi, getListingsApi, Blueprint, Listing } from '@/services/api';
 import { Colors, FontSize, Spacing } from '@/theme';
+import { Images } from '@/theme/images';
 import type { RootStackParamList } from '@/navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -59,14 +61,21 @@ export function HomeScreen() {
       }
       ListHeaderComponent={
         <>
-          {/* Hero */}
-          <View style={styles.hero}>
-            <Text style={styles.heroTitle}>RAIDER</Text>
-            <Text style={[styles.heroTitle, { color: Colors.primary }]}>SYNDICATE</Text>
-            <Text style={styles.heroSub}>ARC Raiders Community Hub</Text>
-          </View>
+          {/* Hero — bg-banner.jpg with open-world bleed */}
+          <ImageBackground
+            source={Images.bgBanner}
+            style={styles.heroBg}
+            imageStyle={styles.heroBgImage}
+          >
+            <View style={styles.heroOverlay}>
+              <Text style={styles.heroTitle}>RAIDER</Text>
+              <Text style={[styles.heroTitle, { color: Colors.primary }]}>SYNDICATE</Text>
+              <Text style={styles.heroSub}>ARC Raiders Community Hub</Text>
+            </View>
+          </ImageBackground>
 
           {/* Quick Actions */}
+          <View style={styles.sectionPad}>
           <View style={styles.quickActions}>
             <TouchableOpacity
               style={styles.actionBtn}
@@ -98,13 +107,14 @@ export function HomeScreen() {
               <Text style={styles.seeAll}>See all</Text>
             </TouchableOpacity>
           </View>
+          </View>
         </>
       }
       data={blueprints}
       keyExtractor={(item) => `bp-${item.id}`}
       renderItem={({ item }) => (
         <Card
-          style={styles.blueprintCard}
+          style={[styles.blueprintCard, styles.cardPad]}
           onPress={() => navigation.navigate('BlueprintDetail', { id: item.id })}
         >
           <View style={styles.cardRow}>
@@ -119,6 +129,7 @@ export function HomeScreen() {
       ListFooterComponent={
         <>
           {/* Section: Recent Listings */}
+          <View style={styles.sectionPad}>
           <View style={[styles.sectionHeader, { marginTop: Spacing.xl }]}>
             <Text style={styles.sectionTitle}>Recent Listings</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Marketplace')}>
@@ -138,6 +149,7 @@ export function HomeScreen() {
               </View>
             </Card>
           ))}
+          </View>
         </>
       }
     />
@@ -146,20 +158,43 @@ export function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
-  content: { padding: Spacing.md, paddingBottom: Spacing.xxl },
-  hero: { alignItems: 'center', paddingVertical: Spacing.xl },
+  content: { paddingBottom: Spacing.xxl },
+
+  // Hero
+  heroBg: { width: '100%', height: 220 },
+  heroBgImage: { resizeMode: 'cover', opacity: 0.7 },
+  heroOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: Spacing.xl,
+  },
   heroTitle: {
     fontSize: FontSize.hero,
     fontWeight: '900',
     color: Colors.textPrimary,
     letterSpacing: 4,
     lineHeight: 40,
+    textShadowColor: '#000',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
-  heroSub: { color: Colors.textSecondary, marginTop: Spacing.xs, letterSpacing: 1 },
+  heroSub: {
+    color: Colors.textSecondary,
+    marginTop: Spacing.xs,
+    letterSpacing: 1,
+    textShadowColor: '#000',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  sectionPad: { paddingHorizontal: Spacing.md },
+  cardPad: { marginHorizontal: Spacing.md },
   quickActions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginBottom: Spacing.xl,
+    marginTop: Spacing.md,
     backgroundColor: Colors.bgElevated,
     borderRadius: 12,
     padding: Spacing.md,

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Alert,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -13,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '@/context/AuthContext';
 import { Colors, FontSize, Radius, Spacing } from '@/theme';
+import { Images } from '@/theme/images';
 import type { RootStackParamList } from '@/navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -46,6 +48,7 @@ export function RegisterScreen() {
   }
 
   return (
+    <ImageBackground source={Images.bgDarkInterior} style={styles.bg} imageStyle={styles.bgImage}>
     <KeyboardAvoidingView
       style={styles.kav}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -100,17 +103,23 @@ export function RegisterScreen() {
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  kav: { flex: 1, backgroundColor: Colors.bg },
+  bg: { flex: 1 },
+  bgImage: { resizeMode: 'cover', opacity: 0.45 },
+  kav: { flex: 1, backgroundColor: 'rgba(10,10,10,0.78)' },
   container: { flexGrow: 1, justifyContent: 'center', padding: Spacing.xl, gap: Spacing.sm },
   title: {
     color: Colors.textPrimary,
     fontSize: FontSize.xxl,
     fontWeight: '800',
     marginBottom: 0,
+    textShadowColor: '#000',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   subtitle: { color: Colors.textSecondary, marginBottom: Spacing.md },
   label: { color: Colors.textSecondary, fontSize: FontSize.sm, marginBottom: -4 },
