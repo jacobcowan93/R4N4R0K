@@ -4,104 +4,164 @@ This file provides guidance for AI assistants (Claude and others) working in thi
 
 ## Project Overview
 
-**R4N4R0K** is a repository owned by [jacobcowan93](https://github.com/jacobcowan93), licensed under the BSD 3-Clause License. As of the initial commit, the project is a minimal scaffold — no source code has been added yet. The `.gitignore` is configured for a [Jekyll](https://jekyllrb.com/) static site, suggesting that is the intended direction.
+**Raider Syndicate** is an ARC Raiders community hub — blueprint tracker & marketplace — owned by [jacobcowan93](https://github.com/jacobcowan93), licensed under BSD 3-Clause.
+
+The app is based on [raider-syndicate.com](https://raider-syndicate.com) and consists of:
+- **`mobile/`** — React Native (Expo) app
+- **`backend/`** — Node.js/Express REST API backed by Firebase/Firestore
 
 ## Repository Structure
 
 ```
 R4N4R0K/
-├── .gitignore       # Jekyll/Bundler ignore rules
-├── LICENSE          # BSD 3-Clause License (Copyright jacobcowan93, 2025)
-├── README.md        # Project title only — to be expanded
-└── CLAUDE.md        # This file
+├── mobile/                  # React Native (Expo) app
+│   ├── App.tsx              # Root component — AuthProvider + AppNavigator
+│   ├── app.json             # Expo config (dark theme, portrait, icons)
+│   ├── babel.config.js      # Babel with module-resolver (@/ alias → src/)
+│   ├── tsconfig.json        # Strict TypeScript with @/ path alias
+│   └── src/
+│       ├── screens/
+│       │   ├── HomeScreen.tsx           # Dashboard: quick actions + recent items
+│       │   ├── BlueprintsScreen.tsx     # Searchable + filterable blueprint list
+│       │   ├── BlueprintDetailScreen.tsx# Detail view with materials + track button
+│       │   ├── MarketplaceScreen.tsx    # G2G-style listings: sort, filters, cards
+│       │   ├── TrackerScreen.tsx        # Bookmarked blueprints for logged-in user
+│       │   ├── ProfileScreen.tsx        # User stats, settings, logout
+│       │   ├── LoginScreen.tsx          # Email/password login
+│       │   └── RegisterScreen.tsx       # New account creation
+│       ├── components/
+│       │   ├── Card.tsx                 # Touchable/static dark card
+│       │   ├── RarityBadge.tsx          # Color-coded rarity chip
+│       │   ├── SearchBar.tsx            # Styled search input with icon
+│       │   └── LoadingSpinner.tsx       # Full-screen activity indicator
+│       ├── navigation/
+│       │   ├── index.tsx                # Stack navigator wrapping bottom tabs
+│       │   └── types.ts                 # RootStackParamList + TabParamList
+│       ├── context/
+│       │   └── AuthContext.tsx          # User/token state + login/register/logout
+│       ├── services/
+│       │   └── api.ts                   # Axios client + typed API helpers
+│       └── theme/
+│           └── index.ts                 # Colors, Spacing, FontSize, Radius, Shadow
+├── backend/                 # Node.js + Express API
+│   └── src/
+│       ├── index.js         # Entry: helmet, cors, rate-limit, route mounting
+│       ├── config/
+│       │   └── firebase.js  # Firebase Admin SDK init (env-based)
+│       ├── middleware/
+│       │   └── auth.js      # authenticate / optionalAuth — Firebase ID token
+│       └── routes/
+│           ├── auth.js      # POST /register, POST /login, GET /me
+│           ├── blueprints.js# GET /blueprints, GET /blueprints/:id
+│           ├── marketplace.js# GET /marketplace, POST, DELETE /:id
+│           └── tracker.js   # GET /tracker, POST /:id, DELETE /:id
+├── .gitignore
+├── LICENSE                  # BSD 3-Clause (jacobcowan93, 2025)
+├── package.json             # Yarn workspaces root
+├── README.md
+└── CLAUDE.md                # This file
 ```
 
-## Tech Stack (Intended)
+## Tech Stack
 
-| Layer       | Technology                                  |
-|-------------|---------------------------------------------|
-| Site        | [Jekyll](https://jekyllrb.com/) static site |
-| Language    | Ruby (Jekyll), Liquid (templating)          |
-| Styles      | Sass/SCSS (Jekyll default pipeline)         |
-| Package Mgr | Bundler (`Gemfile`)                         |
-| Hosting     | GitHub Pages (typical Jekyll deployment)    |
+| Layer | Technology |
+|---|---|
+| Mobile | React Native 0.74 + Expo SDK 51 |
+| Navigation | React Navigation v6 (NativeStack + BottomTabs) |
+| HTTP client | Axios (typed wrappers in `src/services/api.ts`) |
+| Backend | Node.js + Express 4 |
+| Database | Firebase Firestore |
+| Auth | Firebase Authentication (ID tokens) |
+| Icons | @expo/vector-icons (Ionicons set) |
 
-> Until a `Gemfile`, source content, or other configuration is committed, treat this as a blank Jekyll project.
+## Theme System
+
+All visual constants live in `mobile/src/theme/index.ts`:
+
+- **`Colors`** — dark palette (`bg: #0a0a0a`), `primary: #e8a020` (amber/gold), rarity tier colors
+- **`Spacing`** — xs/sm/md/lg/xl/xxl (4–48px)
+- **`FontSize`** — xs through hero
+- **`Radius`** — sm/md/lg/xl/full
+- **`Shadow`** — `card` and `glow` presets
+
+Always use these constants; never hardcode pixel values or color strings.
+
+## API Routes
+
+### Auth
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/auth/register` | — | Create account (Firebase Auth + Firestore user doc) |
+| POST | `/api/auth/login` | — | Sign in (Firebase REST API), returns `idToken` |
+| GET | `/api/auth/me` | ✓ | Get current user profile |
+
+### Blueprints
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/blueprints` | optional | List all blueprints |
+| GET | `/api/blueprints/:id` | optional | Get blueprint by ID |
+
+### Marketplace
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/marketplace` | optional | Paginated listings (filter by category, rarity, search) |
+| POST | `/api/marketplace` | ✓ | Create listing |
+| DELETE | `/api/marketplace/:id` | ✓ (owner) | Remove listing |
+
+### Tracker
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/tracker` | ✓ | List tracked blueprints |
+| POST | `/api/tracker/:blueprintId` | ✓ | Track blueprint |
+| DELETE | `/api/tracker/:blueprintId` | ✓ | Untrack blueprint |
+
+## Development Setup
+
+### Backend
+
+```bash
+cd backend
+cp .env.example .env    # add FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_WEB_API_KEY
+yarn install
+yarn dev                # nodemon on port 3001
+```
+
+### Mobile
+
+```bash
+cd mobile
+cp .env.example .env    # set EXPO_PUBLIC_API_URL=http://localhost:3001/api
+yarn install
+yarn start              # Expo DevTools; press a/i for Android/iOS
+```
 
 ## Git Workflow
 
-### Branches
+| Branch | Purpose |
+|---|---|
+| `main` | Stable, production-ready |
+| `master` | Legacy default |
+| `claude/<desc>-<session-id>` | AI work branches |
 
-| Branch                              | Purpose                          |
-|-------------------------------------|----------------------------------|
-| `main`                              | Stable, production-ready code    |
-| `master`                            | Legacy default (mirrors `main`)  |
-| `claude/<description>-<session-id>` | AI-generated feature branches    |
-
-- All AI assistant work should be done on a `claude/` prefixed branch.
-- Never push directly to `main` or `master` without a pull request.
-
-### Commit Conventions
-
-- Use clear, descriptive commit messages in the imperative mood (e.g., `Add Jekyll config`, `Fix navigation layout`).
-- Commits are GPG-signed by the repository owner.
-- Keep commits focused — one logical change per commit.
-
-### Push Workflow
-
-```bash
-git push -u origin <branch-name>
-```
-
-- Branch names for AI sessions must start with `claude/` and end with the session ID to avoid 403 errors.
-- On network failure, retry up to 4 times with exponential backoff: 2s, 4s, 8s, 16s.
-
-## Development Setup (Jekyll)
-
-Once a `Gemfile` is added, the standard Jekyll workflow will apply:
-
-```bash
-# Install dependencies
-bundle install
-
-# Serve locally with live reload
-bundle exec jekyll serve --livereload
-
-# Build for production
-bundle exec jekyll build
-```
-
-Output is generated to `_site/` (already gitignored).
-
-## Ignored Paths
-
-The following are excluded from version control (see `.gitignore`):
-
-```
-_site/            # Jekyll build output
-.sass-cache/      # Sass compilation cache
-.jekyll-cache/    # Jekyll incremental build cache
-.jekyll-metadata  # Jekyll build metadata
-.bundle/          # Bundler local config
-vendor/           # Bundler-installed gems
-```
-
-Do not commit any of these paths.
+- AI work must stay on `claude/` branches.
+- Never push directly to `main`/`master`.
+- Push: `git push -u origin <branch-name>`
+- On network failure: retry up to 4× with 2s/4s/8s/16s backoff.
 
 ## Conventions for AI Assistants
 
-1. **Minimal changes** — Only make changes directly relevant to the task. Avoid refactoring unrelated code.
-2. **No speculative files** — Do not create files (config, docs, source) unless explicitly requested or clearly required.
-3. **Preserve license headers** — The project uses BSD 3-Clause. Do not alter `LICENSE` or add incompatible dependencies.
-4. **Branch discipline** — Always develop on the designated `claude/` branch; never commit to `main`/`master`.
-5. **Commit before pushing** — Ensure all changes are committed with a clear message before pushing.
-6. **No secrets** — Do not commit API keys, tokens, `.env` files, or credentials of any kind.
-7. **Respect `.gitignore`** — Do not force-add ignored files.
+1. **Minimal changes** — Only change what the task requires.
+2. **Use theme constants** — Always import from `@/theme`, never hardcode.
+3. **Type everything** — TypeScript strict mode is enabled; no `any` without justification.
+4. **No secrets** — `.env` files are gitignored; never commit credentials.
+5. **No speculative additions** — Don't add features, error handling, or abstractions not asked for.
+6. **Preserve BSD-3 license** — Don't alter `LICENSE` or introduce GPL-incompatible dependencies.
+7. **Branch discipline** — `claude/` prefix required; never commit to `main`/`master`.
 
 ## Current State
 
-- **Working tree:** Clean (no uncommitted changes at project initialization)
 - **Active branch:** `claude/add-claude-documentation-wPuUn`
 - **CI/CD:** Not yet configured
 - **Tests:** Not yet configured
-- **Source code:** Not yet added
+- **Backend:** Fully scaffolded — requires Firebase credentials to run
+- **Mobile:** All screens implemented — requires Expo Go + running backend

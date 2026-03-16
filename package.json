@@ -1,0 +1,14 @@
+{
+  "name": "raider-syndicate",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "mobile",
+    "backend"
+  ],
+  "scripts": {
+    "mobile": "yarn workspace mobile start",
+    "backend": "yarn workspace backend dev",
+    "install:all": "yarn install"
+  }
+}
