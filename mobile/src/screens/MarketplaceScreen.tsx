@@ -8,12 +8,11 @@
  *   trust badge, delivery type, price & Buy Now button
  * - Infinite scroll / pagination
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   Modal,
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -25,7 +24,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RarityBadge } from '@/components/RarityBadge';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { getListingsApi, Listing } from '@/services/api';
+import { Listing } from '@/services/api';
+import { useRealtimeListings } from '@/hooks/useRealtimeListings';
 import { Colors, FontSize, Radius, Shadow, Spacing } from '@/theme';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -68,59 +68,39 @@ const DELIVERY_OPTIONS: { key: Filters['delivery']; label: string }[] = [
 // ─── Main Screen ────────────────────────────────────────────────────────────
 
 export function MarketplaceScreen() {
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortKey>('most_recent');
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [filterVisible, setFilterVisible] = useState(false);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
+
+  // Real-time Firestore listener — updates instantly when listings are added/removed
+  const { listings, loading } = useRealtimeListings({
+    category: filters.category !== 'All' ? filters.category : undefined,
+    rarity: filters.rarity !== 'All' ? filters.rarity : undefined,
+  });
+
   const activeFilters = Object.values(filters).filter(
     (v) => v !== 'All' && v !== 'all' && v !== '',
   ).length;
 
-  const fetchListings = useCallback(
-    async (p = 1, reset = false) => {
-      try {
-        const res = await getListingsApi({
-          search,
-          category: filters.category !== 'All' ? filters.category : undefined,
-          rarity: filters.rarity !== 'All' ? filters.rarity.toLowerCase() : undefined,
-          page: p,
-        });
-        const { listings: items, total: t } = res.data;
-        setListings((prev) => (reset ? items : [...prev, ...items]));
-        setTotal(t);
-        setPage(p);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [search, filters],
-  );
-
-  useEffect(() => {
-    setLoading(true);
-    fetchListings(1, true);
-  }, [fetchListings]);
-
-  // Client-side sort (backend would handle in production)
-  const sorted = useMemo(() => {
-    const list = [...listings];
-    if (sort === 'price_asc') return list.sort((a, b) => a.price - b.price);
-    if (sort === 'price_desc') return list.sort((a, b) => b.price - a.price);
-    return list; // most_recent and rating handled server-side
-  }, [listings, sort]);
-
-  // Price range filter (client-side)
+  // Client-side sort + search + price range
   const displayed = useMemo(() => {
     const min = Number(filters.minPrice) || 0;
     const max = Number(filters.maxPrice) || Infinity;
-    return sorted.filter((l) => l.price >= min && l.price <= max);
-  }, [sorted, filters.minPrice, filters.maxPrice]);
+    const q = search.toLowerCase();
+
+    let list = listings.filter(
+      (l) =>
+        l.price >= min &&
+        l.price <= max &&
+        (q === '' || l.itemName.toLowerCase().includes(q)),
+    );
+
+    if (sort === 'price_asc') list = [...list].sort((a, b) => a.price - b.price);
+    if (sort === 'price_desc') list = [...list].sort((a, b) => b.price - a.price);
+
+    return list;
+  }, [listings, sort, search, filters.minPrice, filters.maxPrice]);
 
   if (loading) return <LoadingSpinner />;
 
@@ -178,7 +158,11 @@ export function MarketplaceScreen() {
 
       {/* ── Results header ────────────────────────────────────── */}
       <View style={styles.resultsHeader}>
-        <Text style={styles.resultsCount}>{total.toLocaleString()} listings</Text>
+        <Text style={styles.resultsCount}>{displayed.length.toLocaleString()} listings</Text>
+        <View style={styles.liveIndicator}>
+          <View style={styles.liveDot} />
+          <Text style={styles.liveText}>Live</Text>
+        </View>
       </View>
 
       {/* ── Listings ──────────────────────────────────────────── */}
@@ -186,15 +170,6 @@ export function MarketplaceScreen() {
         data={displayed}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => { setRefreshing(true); fetchListings(1, true); }}
-            tintColor={Colors.primary}
-          />
-        }
-        onEndReached={() => { if (listings.length < total) fetchListings(page + 1); }}
-        onEndReachedThreshold={0.4}
         renderItem={({ item }) => <G2GListingCard listing={item} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={<EmptyState />}
@@ -502,8 +477,19 @@ const styles = StyleSheet.create({
   resultsHeader: {
     paddingHorizontal: Spacing.md,
     paddingBottom: Spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   resultsCount: { color: Colors.textMuted, fontSize: FontSize.sm },
+  liveIndicator: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.success,
+  },
+  liveText: { color: Colors.success, fontSize: FontSize.xs, fontWeight: '600' },
 
   // List
   listContent: { paddingBottom: Spacing.xxl },

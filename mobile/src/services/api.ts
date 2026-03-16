@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { auth } from '@/config/firebase';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
@@ -10,10 +11,12 @@ export const api = axios.create({
   },
 });
 
-api.interceptors.request.use((config) => {
-  // Attach auth token if available
-  const token = global.__authToken;
-  if (token) {
+// Automatically attach a fresh Firebase ID token to every request.
+// Firebase handles token refresh (expiry ~1hr) transparently.
+api.interceptors.request.use(async (config) => {
+  const fbUser = auth.currentUser;
+  if (fbUser) {
+    const token = await fbUser.getIdToken();
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
